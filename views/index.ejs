@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Lambda Dashboard</title>
+
+    <link rel="stylesheet" href="<%= basePath %>/css/styles.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 AWS Lambda Dashboard</h1>
+
+            <a href="<%= basePath %>/refresh?region=<%= selectedRegion %>" class="refresh-btn">
+                Refresh
+            </a>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+
+            <!-- Search -->
+            <input type="text" id="searchInput" placeholder="Search Lambda Functions..." onkeyup="applyFilters()">
+
+            <!-- Region -->
+            <select id="regionFilter" onchange="changeRegion(this.value)">
+
+                <option value="ap-south-1" <%=selectedRegion==='ap-south-1' ? 'selected' : '' %>>
+                    Mumbai (ap-south-1)
+                </option>
+
+                <option value="us-east-1" <%=selectedRegion==='us-east-1' ? 'selected' : '' %>>
+                    N. Virginia (us-east-1)
+                </option>
+
+                <option value="eu-west-1" <%=selectedRegion==='eu-west-1' ? 'selected' : '' %>>
+                    Ireland (eu-west-1)
+                </option>
+
+            </select>
+            <select id="environmentFilter" onchange="applyFilters()">
+
+                <option value="">
+                    All Environments
+                </option>
+
+                <% [...new Set( functions.map(f=> f.environment)
+                    )]
+                    .sort()
+                    .forEach(environment => { %>
+
+                    <option value="<%= environment %>">
+                        <%= environment.toUpperCase() %>
+                    </option>
+
+                    <% }) %>
+
+            </select>
+            <!-- Runtime -->
+            <select id="runtimeFilter" onchange="applyFilters()">
+
+                <option value="">
+                    All Runtimes
+                </option>
+
+                <% [...new Set(functions.map(f=> f.runtime))]
+                    .sort()
+                    .forEach(runtime => { %>
+
+                    <option value="<%= runtime %>">
+                        <%= runtime %>
+                    </option>
+
+                    <% }) %>
+
+            </select>
+
+            <!-- Author -->
+            <select id="authorFilter" onchange="applyFilters()">
+
+                <option value="">
+                    All Authors
+                </option>
+
+                <% [...new Set( functions .map(f=> f.metadata?.author)
+                    .filter(Boolean)
+                    )]
+                    .sort()
+                    .forEach(author => { %>
+
+                    <option value="<%= author %>">
+                        <%= author %>
+                    </option>
+
+                    <% }) %>
+
+            </select>
+
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+
+            <div class="card">
+                <h3>Total Functions</h3>
+                <div class="value">
+                    <%= functions.length %>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Active</h3>
+                <div class="value">
+                    <%= functions.filter(f=> f.state === 'Active').length %>
+                </div>
+            </div>
+
+
+            <div class="card">
+                <h3>Region</h3>
+                <div class="value">
+                    <%= selectedRegion %>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+
+            <table id="lambdaTable">
+
+                <thead>
+                    <tr>
+                        <th>Function</th>
+                        <th>Runtime</th>
+                        <th>Memory</th>
+                        <th>Timeout</th>
+                        <th>Status</th>
+                        <th>Architecture</th>
+
+                        <th>Version</th>
+                        <th>Author</th>
+                        <th>Branch</th>
+                        <th>Commit</th>
+                        <th>Environment</th>
+                        <th>Build Time</th>
+                        <th>Last Modified</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <% functions.forEach(fn=> { %>
+
+                        <tr data-name="<%= fn.name %>" data-runtime="<%= fn.runtime %>"
+                            data-author="<%= fn.metadata?.author || '' %>" data-environment="<%= fn.environment %>"
+                            data-memory="<%= fn.memorySize %>" data-status="<%= fn.state || 'Unknown' %>">
+
+                            <td>
+                                <strong>
+                                    <%= fn.name %>
+                                </strong>
+                            </td>
+
+                            <td>
+                                <span class="runtime">
+                                    <%= fn.runtime %>
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge memory">
+                                    <%= fn.memorySize %> MB
+                                </span>
+                            </td>
+                            <td>
+                                <%= fn.timeout %>s
+                            </td>
+                            <td>
+                                <span class="status status-<%= (fn.state || 'unknown').toLowerCase() %>">
+                                    <%= fn.state || 'Unknown' %>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="function-meta">
+                                    <small>
+                                        <%= fn.architecture || 'arm64' %>
+                                    </small>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="badge version">
+                                    <%= fn.metadata?.version || '-' %>
+                                </span>
+                            </td>
+
+                            <td>
+                                <%= fn.metadata?.author || '-' %>
+                            </td>
+
+                            <td>
+                                <span class="badge branch">
+                                    <%= fn.metadata?.branch || '-' %>
+                                </span>
+                            </td>
+
+                            <td>
+                                <code>
+                                <%= fn.metadata?.commitId || '-' %>
+                            </code>
+                            </td>
+
+                            <td>
+                                <span class="env env-<%= fn.environment %>">
+                                    <%= fn.environment.toUpperCase() %>
+                                </span>
+                            </td>
+
+                            <td>
+                                <%= fn.metadata?.buildTime || '-' %>
+                            </td>
+
+                            <td>
+                                <%= fn.lastModified %>
+                            </td>
+
+
+
+                        </tr>
+
+                        <% }) %>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="footer">
+            AWS Lambda Monitoring Dashboard
+        </div>
+
+    </div>
+
+    <script>
+
+
+        function applyFilters() {
+
+            const search =
+                document
+                    .getElementById("searchInput")
+                    .value
+                    .toLowerCase();
+
+            const runtime =
+                document
+                    .getElementById("runtimeFilter")
+                    .value;
+
+            const author =
+                document
+                    .getElementById("authorFilter")
+                    .value;
+
+            const environment =
+                document
+                    .getElementById("environmentFilter")
+                    .value;
+
+            const memory =
+                document
+                    .getElementById("memoryFilter")
+                    ?.value || "";
+
+            const status =
+                document
+                    .getElementById("statusFilter")
+                    ?.value || "";
+
+            const rows =
+                document.querySelectorAll(
+                    "#lambdaTable tbody tr"
+                );
+
+            rows.forEach(row => {
+
+                const name =
+                    row.dataset.name.toLowerCase();
+
+                const rowRuntime =
+                    row.dataset.runtime;
+
+                const rowAuthor =
+                    row.dataset.author;
+
+                const rowEnvironment =
+                    row.dataset.environment;
+
+                const rowMemory =
+                    row.dataset.memory;
+
+                const rowStatus =
+                    row.dataset.status;
+
+                const matchesSearch =
+                    !search ||
+                    name.includes(search);
+
+                const matchesRuntime =
+                    !runtime ||
+                    runtime === rowRuntime;
+
+                const matchesAuthor =
+                    !author ||
+                    author === rowAuthor;
+
+                const matchesEnvironment =
+                    !environment ||
+                    environment === rowEnvironment;
+
+                const matchesMemory =
+                    !memory ||
+                    memory === rowMemory;
+
+                const matchesStatus =
+                    !status ||
+                    status === rowStatus;
+
+                row.style.display =
+                    matchesSearch &&
+                        matchesRuntime &&
+                        matchesAuthor &&
+                        matchesEnvironment &&
+                        matchesMemory &&
+                        matchesStatus
+                        ? ""
+                        : "none";
+            });
+        }
+        function changeRegion(region) {
+
+            const url =
+                new URL(window.location.href);
+
+            url.searchParams.set(
+                "region",
+                region
+            );
+
+            window.location.href =
+                url.toString();
+        }
+
+    </script>
+
+</body>
+
+</html>
